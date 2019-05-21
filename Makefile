@@ -1,7 +1,7 @@
 CC = gcc
 EXECUTABLE = logd
 CFLAGS = -Wall -Wextra -pedantic -g
-OBJS = logging_deamon.o file_list.o
+OBJS = logging_deamon.o file_list.o htable.o
 
 all: $(EXECUTABLE)
 

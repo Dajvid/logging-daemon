@@ -1,5 +1,9 @@
 #include "logging_deamon.h"
 
+htable table;
+int fd = -1;
+struct file_list file_list;
+
 RETCODE
 create_socket(int *fd)
 {
@@ -40,12 +44,16 @@ free_socket(int *fd)
 void
 add_file_to_file_list(char *path, struct file_list *file_list)
 {
-    file_list->files[file_list->count] = fopen(path, "a");
-    if (!file_list->files[file_list->count]) {
-        fprintf(stderr, "WARNING: unable to open file %s for writing\n", path);
+    if (access(path, F_OK)) {
+        fprintf(stderr, "WARNING: file %s doesn't exist\n", path);
     } else {
-        setvbuf(file_list->files[file_list->count], NULL, _IONBF, 0);
-        file_list->count++;
+        file_list->files[file_list->count] = fopen(path, "a");
+        if (!file_list->files[file_list->count]) {
+            fprintf(stderr, "WARNING: unable to open file %s for writing\n", path);
+        } else {
+            setvbuf(file_list->files[file_list->count], NULL, _IONBF, 0);
+            file_list->count++;
+        }
     }
 }
 
@@ -91,43 +99,82 @@ parse_args(int argc, char **argv, bool *fork, struct file_list *file_list)
 }
 
 RETCODE
-write_message_to_files(char *msg, struct file_list file_list)
+save_message(char *msg, struct file_list file_list)
 {
     int saved = 0;
     int msg_len = strlen(msg);
 
     for (int i = 0; i < file_list.count; i++) {
-        saved = fprintf(file_list.files[i], msg);
-        saved += fprintf(file_list.files[i], "\n");
+        saved = fprintf(file_list.files[i], "%s\n", msg);
         if (saved != msg_len + 1) {
             fprintf(stderr, "WARNING: Unable to save whole message into file");
         }
     }
-
+    printf("%s\n", msg);
     return SUCCES;
+}
+
+void
+free_resources() {
+    char *msg = htable_get_most_frequented(&table);
+    if (msg) {
+        printf("---most frequented message---\n%s\n", msg);
+    }
+    htable_free(&table);
+    free_socket(&fd);
+    free_file_list(file_list);
+
+    exit(SUCCES);
+}
+
+char *
+remove_prefix(char *msg)
+{
+    int double_dot_counter = 0;
+    while(msg[0] != '\0') {
+        if (msg[0] == ':') {
+            double_dot_counter++;
+        }
+        msg = &msg[1];
+        if (double_dot_counter == 3) {
+            msg = &msg[1];
+            break;
+        }
+    }
+
+    return msg;
 }
 
 int
 main(int argc, char **argv)
 {
-    int fd = -1;
     bool fork = false;
-    struct file_list file_list;
     RETCODE ret = SUCCES;
-    char *msg;
+    char *msg = NULL;
+    char *stripped_msg = NULL;
 
-    parse_args(argc, argv, &fork, &file_list);
+    signal(SIGINT, free_resources);
+    signal(SIGKILL, free_resources);
+
+    IF_RET(parse_args(argc, argv, &fork, &file_list) != SUCCES, NO_FILE_ERR);
     IF_RET(create_socket(&fd) != SUCCES, SOCK_ERR);
+    htable_init(&table);
+
 
     while(load_message(fd, &msg) == SUCCES) {
         if (msg) {
-            ret = write_message_to_files(msg, file_list);
+            stripped_msg = remove_prefix(msg);
+            if (stripped_msg != NULL) {
+                htable_insert(&table, stripped_msg);
+            }
+            ret = save_message(msg, file_list);
             if (ret != SUCCES) {
                 break;
             }
         }
     }
 
+    htable_free(&table);
     free_socket(&fd);
     free_file_list(file_list);
     return EXIT_SUCCESS;

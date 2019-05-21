@@ -7,8 +7,10 @@
 #include <stdbool.h>
 #include <sys/ioctl.h>
 #include <string.h>
+#include<signal.h>
 #include "common.h"
 #include "file_list.h"
+#include "htable.h"
 
 #define SOCK_PATH "/dev/log"
 
