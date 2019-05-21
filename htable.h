@@ -1,3 +1,6 @@
+#ifndef HTABLE_H
+#define HTABLE_H
+
 #include "common.h"
 #include <string.h>
 
@@ -31,3 +34,5 @@ unsigned int htable_hash(const char *key);
 struct htable_item *htable_get_record(htable *table, char *key);
 
 char * htable_get_most_frequented(htable *table);
+
+#endif //HTABLE_H
