@@ -2,17 +2,18 @@ CC = gcc
 EXECUTABLE = logd
 CFLAGS = -Wall -Wextra -pedantic -g
 OBJS = logging_deamon.o file_list.o htable.o
+SRC = ../src/
 
 all: $(EXECUTABLE)
 
 $(EXECUTABLE): $(OBJS)
 	$(CC) $(CFLAGS) -o $@ $^
 
-%.o: %.c
+%.o: $(SRC)%.c
 	$(CC) $(CFLAGS) -c $^ -o $@
 
 run: $(EXECUTABLE)
 	./$(EXECUTABLE)
 
 clean:
-	rm -f $(EXECUTABLE) $(SRC)*.o
+	rm -f $(EXECUTABLE) *.o
