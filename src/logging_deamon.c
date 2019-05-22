@@ -136,6 +136,34 @@ remove_prefix(char *msg)
     return msg;
 }
 
+void
+deamonize()
+{
+    setsid();
+    signal(SIGHUP,SIG_IGN);
+    pid_t pid = fork();
+    if (pid == -1) {
+        fprintf(stderr, "ERROR: failed to fork while daemonising");
+        exit(DEAM_ERR);
+    } else if (pid != 0) {
+        _exit(0);
+    }
+
+    chdir("/");
+    close(STDIN_FILENO);
+    close(STDOUT_FILENO);
+    close(STDERR_FILENO);
+    if (open("/dev/null",O_RDONLY) == -1) {
+        exit(DEAM_ERR);
+    }
+    if (open("/dev/null",O_WRONLY) == -1) {
+        exit(DEAM_ERR);
+    }
+    if (open("/dev/null",O_RDWR) == -1) {
+        exit(DEAM_ERR);
+    }
+}
+
 int
 main(int argc, char **argv)
 {
@@ -144,18 +172,25 @@ main(int argc, char **argv)
     char *msg = NULL;
     char *stripped_msg = NULL;
 
+    IF_RET(parse_args(argc, argv, &fork_option, &file_list) != SUCCES, NO_FILE_ERR);
+
+    if (fork_option) {
+        pid_t pid = fork();
+        if (pid == -1) {
+            fprintf(stderr, "ERROR: failed to fork while daemonising");
+            exit(DEAM_ERR);
+        } else if (pid != 0) {
+            _exit(0);
+        }
+        //deamonize forked process
+        deamonize();
+    }
+
     signal(SIGINT, free_resources);
     signal(SIGKILL, free_resources);
 
-    IF_RET(parse_args(argc, argv, &fork_option, &file_list) != SUCCES, NO_FILE_ERR);
     IF_RET(create_socket(&pfd.fd) != SUCCES, SOCK_ERR);
     htable_init(&table);
-
-    if (fork_option) {
-        if(fork() != 0) {
-            return SUCCES;
-        }
-    }
 
     pfd.events = POLLIN;
 
@@ -163,6 +198,7 @@ main(int argc, char **argv)
         poll(&pfd, 1, -1);
         load_message(pfd.fd, &msg);
         if (msg) {
+            printf("message_read");
             stripped_msg = remove_prefix(msg);
             if (stripped_msg != NULL) {
                 htable_insert(&table, stripped_msg);

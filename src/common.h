@@ -9,6 +9,7 @@ typedef enum {
     SOCK_ERR,
     INT_ERR,
     NO_FILE_ERR,
+    DEAM_ERR,
 } RETCODE;
 
 #endif //COMMON_H

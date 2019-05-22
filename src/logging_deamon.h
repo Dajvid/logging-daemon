@@ -12,6 +12,7 @@
 #include <string.h>
 #include <signal.h>
 #include <poll.h>
+#include <fcntl.h>
 #include "common.h"
 #include "file_list.h"
 #include "htable.h"
