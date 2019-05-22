@@ -99,11 +99,17 @@ save_message(char *msg, struct file_list file_list)
 }
 
 void
+most_frequented()
+{
+
+}
+
+void
 free_resources()
 {
-    char *msg = htable_get_most_frequented(&table);
-    if (msg) {
-        printf("---most frequented message---\n%s\n", msg);
+    struct htable_data *data = htable_get_most_frequented(&table);
+    if (data) {
+        printf("---most frequented message---\n(2x) -- %s\n", data->msg);
     }
     htable_free(&table);
     free_socket(&fd);

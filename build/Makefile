@@ -12,8 +12,5 @@ $(EXECUTABLE): $(OBJS)
 %.o: $(SRC)%.c
 	$(CC) $(CFLAGS) -c $^ -o $@
 
-run: $(EXECUTABLE)
-	./$(EXECUTABLE)
-
 clean:
 	rm -f $(EXECUTABLE) *.o

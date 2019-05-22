@@ -4,7 +4,7 @@
 #include "common.h"
 #include <string.h>
 
-#define HTABLE_SIZE 256
+#define HTABLE_SIZE 5
 
 struct htable_data {
     int occurence;
@@ -33,6 +33,6 @@ unsigned int htable_hash(const char *key);
 
 struct htable_item *htable_get_record(htable *table, char *key);
 
-char * htable_get_most_frequented(htable *table);
+struct htable_data *htable_get_most_frequented(htable *table);
 
 #endif //HTABLE_H

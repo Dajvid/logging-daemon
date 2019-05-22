@@ -64,7 +64,7 @@ htable_get_record(htable *table, char *key)
     struct htable_item *iter = table->lists[index];
 
     while (iter) {
-        if (strcmp(iter->data.msg, key)) {
+        if (strcmp(iter->data.msg, key) == 0) {
             return iter;
         }
         iter = iter->next;
@@ -73,25 +73,25 @@ htable_get_record(htable *table, char *key)
     return NULL;
 }
 
-char *
+struct htable_data *
 htable_get_most_frequented(htable *table)
 {
     struct htable_item *record = NULL;
-    struct htable_data most_frequented = {0, NULL};
-
+    struct htable_data dummy = {0, NULL};
+    struct htable_data *most_frequented = &dummy;
     for (int i = 0; i < HTABLE_SIZE; i++) {
         record = table->lists[i];
         while(record) {
-            if (record->data.occurence > most_frequented.occurence) {
-                most_frequented = record->data;
+            if (record->data.occurence > most_frequented->occurence) {
+                *most_frequented = record->data;
             }
             record = record->next;
         }
     }
 
-    if (most_frequented.occurence == 0) {
+    if (most_frequented->occurence == 0) {
         return NULL;
     }
 
-    return (most_frequented.occurence == 0) ? NULL : most_frequented.msg;
+    return (most_frequented->occurence == 0) ? NULL : most_frequented;
 }
