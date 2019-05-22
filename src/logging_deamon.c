@@ -101,21 +101,27 @@ save_message(char *msg, struct file_list file_list)
 void
 most_frequented()
 {
-
+    struct htable_data *data = htable_get_most_frequented(&table);
+    if (data) {
+        printf("---most frequented message---\n(%d) %s\n", data->occurence, data->msg);
+    }
 }
 
 void
 free_resources()
 {
-    struct htable_data *data = htable_get_most_frequented(&table);
-    if (data) {
-        printf("---most frequented message---\n(%d) -- %s\n", data->occurence, data->msg);
-    }
     htable_free(&table);
     free_socket(&pfd.fd);
     free_file_list(file_list);
 
     exit(SUCCES);
+}
+
+void
+exit_logger()
+{
+    most_frequented();
+    free_resources();
 }
 
 char *
@@ -186,8 +192,8 @@ main(int argc, char **argv)
         deamonize();
     }
 
-    signal(SIGINT, free_resources);
-    signal(SIGKILL, free_resources);
+    signal(SIGINT, exit_logger);
+    signal(SIGKILL, exit_logger);
 
     IF_RET(create_socket(&pfd.fd) != SUCCES, SOCK_ERR);
     htable_init(&table);
@@ -210,8 +216,6 @@ main(int argc, char **argv)
         }
     }
 
-    htable_free(&table);
-    free_socket(&pfd.fd);
-    free_file_list(file_list);
+    free_resources();
     return EXIT_SUCCESS;
 }

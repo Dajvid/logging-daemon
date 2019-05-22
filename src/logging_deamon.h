@@ -35,4 +35,8 @@ void free_resources();
 
 char *remove_prefix(char *msg);
 
+void most_frequented();
+
+void exit_logger();
+
 #endif //LOGGING_DEAMON_H
