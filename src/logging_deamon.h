@@ -11,6 +11,7 @@
 #include <sys/ioctl.h>
 #include <string.h>
 #include <signal.h>
+#include <poll.h>
 #include "common.h"
 #include "file_list.h"
 #include "htable.h"

@@ -1,7 +1,7 @@
 #include "logging_deamon.h"
 
 htable table;
-int fd = -1;
+struct pollfd pfd = {-1, -1, -1};
 struct file_list file_list;
 
 RETCODE
@@ -62,13 +62,13 @@ load_message(int fd, char **msg)
 }
 
 RETCODE
-parse_args(int argc, char **argv, bool *fork, struct file_list *file_list)
+parse_args(int argc, char **argv, bool *fork_option, struct file_list *file_list)
 {
     IF_RET(init_file_list(file_list, argc) != SUCCES, INT_ERR);
 
     for (int i = 1; i < argc; i++) {
         if (argv[i][0] == '-' && argv[i][1] == 'f' && argv[i][2] == '\0') {
-            *fork = true;
+            *fork_option = true;
         } else {
             add_file_to_file_list(argv[i], file_list);
         }
@@ -109,10 +109,10 @@ free_resources()
 {
     struct htable_data *data = htable_get_most_frequented(&table);
     if (data) {
-        printf("---most frequented message---\n(2x) -- %s\n", data->msg);
+        printf("---most frequented message---\n(%d) -- %s\n", data->occurence, data->msg);
     }
     htable_free(&table);
-    free_socket(&fd);
+    free_socket(&pfd.fd);
     free_file_list(file_list);
 
     exit(SUCCES);
@@ -139,7 +139,7 @@ remove_prefix(char *msg)
 int
 main(int argc, char **argv)
 {
-    bool fork = false;
+    bool fork_option = false;
     RETCODE ret = SUCCES;
     char *msg = NULL;
     char *stripped_msg = NULL;
@@ -147,12 +147,21 @@ main(int argc, char **argv)
     signal(SIGINT, free_resources);
     signal(SIGKILL, free_resources);
 
-    IF_RET(parse_args(argc, argv, &fork, &file_list) != SUCCES, NO_FILE_ERR);
-    IF_RET(create_socket(&fd) != SUCCES, SOCK_ERR);
+    IF_RET(parse_args(argc, argv, &fork_option, &file_list) != SUCCES, NO_FILE_ERR);
+    IF_RET(create_socket(&pfd.fd) != SUCCES, SOCK_ERR);
     htable_init(&table);
 
+    if (fork_option) {
+        if(fork() != 0) {
+            return SUCCES;
+        }
+    }
 
-    while(load_message(fd, &msg) == SUCCES) {
+    pfd.events = POLLIN;
+
+    while(1) {
+        poll(&pfd, 1, -1);
+        load_message(pfd.fd, &msg);
         if (msg) {
             stripped_msg = remove_prefix(msg);
             if (stripped_msg != NULL) {
@@ -166,7 +175,7 @@ main(int argc, char **argv)
     }
 
     htable_free(&table);
-    free_socket(&fd);
+    free_socket(&pfd.fd);
     free_file_list(file_list);
     return EXIT_SUCCESS;
 }
